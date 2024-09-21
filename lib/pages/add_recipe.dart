@@ -1,7 +1,9 @@
 import 'dart:io';
 
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:random_string/random_string.dart';
 import 'package:recipe_app/components/image_card.dart';
 
 class AddRecipes extends StatefulWidget {
@@ -30,6 +32,28 @@ class _AddRecipesState extends State<AddRecipes> {
       setState(() {
         selectedImage = File(image.path);
       });
+    }
+  }
+
+  //uploading image function
+  uploadImage() async {
+    if (selectedImage != null &&
+        recipeNameController.text != "" &&
+        recipeDetailsController.text != "") {
+      String addId = randomAlphaNumeric(10);
+
+      Reference firebaseStorageRef =
+          FirebaseStorage.instance.ref().child("blogImage").child(addId);
+
+      final UploadTask task = firebaseStorageRef.putFile(selectedImage!);
+
+      var downloadurl = await (await task).ref.getDownloadURL();
+
+      Map<String, dynamic> addrecipe = {
+        "Recipe": recipeNameController.text,
+        "Details": recipeDetailsController.text,
+        "Image": downloadurl,
+      };
     }
   }
 
