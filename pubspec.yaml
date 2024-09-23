@@ -13,6 +13,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_dotenv: ^5.1.0
+  fluttertoast: ^8.2.8
   image_picker: ^1.1.2
   random_string: ^2.3.1
 
@@ -25,3 +26,4 @@ flutter:
   uses-material-design: true
   assets:
     - images/
+    - .env

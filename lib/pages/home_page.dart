@@ -1,7 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
+import 'package:recipe_app/components/category_section.dart';
 import 'package:recipe_app/models/recipe_category.dart';
+import 'package:recipe_app/pages/add_recipe.dart';
+import 'package:recipe_app/pages/recipe.dart';
 import 'package:recipe_app/services/data.dart';
+import 'package:recipe_app/services/firebase_database.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -11,8 +15,21 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // getting the list of categories
-  List<RecipeCategory> categories = getCategories();
+  Stream? recipeStream;
+
+  //getting all the recipes
+  getOnTheLoad() async {
+    recipeStream = await FirebaseDatabase().getAllRecipes();
+    setState(() {});
+  }
+
+  //load the data once the app opens
+  @override
+  void initState() {
+    super.initState();
+    getOnTheLoad();
+  }
+
   // list of trending categories
   List<RecipeCategory> trending_categories = getTrendingCategories();
 
@@ -22,7 +39,7 @@ class _HomePageState extends State<HomePage> {
       body: SingleChildScrollView(
         child: SafeArea(
           child: Container(
-            margin: const EdgeInsets.only(left: 20.0),
+            margin: const EdgeInsets.only(left: 20.0, top: 50.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -38,15 +55,12 @@ class _HomePageState extends State<HomePage> {
                               fontSize: 25.0,
                               fontWeight: FontWeight.bold)),
                       const Spacer(),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: Image.asset(
-                          "images/blank-profile-picture.webp",
-                          height: 60,
-                          width: 60,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
+                      GestureDetector(
+                          onTap: () {
+                            getOnTheLoad();
+                          },
+                          child: const Icon(Icons.refresh,
+                              color: Colors.black, size: 30.0)),
                     ],
                   ),
                 ),
@@ -77,38 +91,7 @@ class _HomePageState extends State<HomePage> {
                   height: 20,
                 ),
 
-                // the categories
-                SizedBox(
-                  height: 200,
-                  child: ListView.builder(
-                      itemCount: categories.length,
-                      shrinkWrap: true,
-                      scrollDirection: Axis.horizontal,
-                      itemBuilder: (context, index) {
-                        return Container(
-                          margin: const EdgeInsets.only(right: 10.0),
-                          padding: const EdgeInsets.all(10.0),
-                          child: Column(
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(20),
-                                child: Image.asset(
-                                  categories[index].imageUrl,
-                                  width: 150,
-                                  height: 150,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                              Text(
-                                categories[index].category,
-                                style: const TextStyle(
-                                    fontSize: 20, fontWeight: FontWeight.w500),
-                              ),
-                            ],
-                          ),
-                        );
-                      }),
-                ),
+                const CategorySection(),
 
                 //size box for spacing
                 const SizedBox(
@@ -123,42 +106,7 @@ class _HomePageState extends State<HomePage> {
                 //trending categories list
                 SizedBox(
                   height: 350,
-                  child: ListView.builder(
-                      itemCount: trending_categories.length,
-                      scrollDirection: Axis.horizontal,
-                      shrinkWrap: true,
-                      itemBuilder: (context, index) {
-                        return Container(
-                          margin: const EdgeInsets.only(right: 10.0),
-                          child: Card(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                ClipRRect(
-                                  borderRadius: const BorderRadius.only(
-                                      topLeft: Radius.circular(10),
-                                      topRight: Radius.circular(10)),
-                                  child: Image.asset(
-                                    trending_categories[index].imageUrl,
-                                    width: 300,
-                                    height: 300,
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.only(
-                                      left: 10.0, top: 10.0),
-                                  child: Text(
-                                    trending_categories[index].category,
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 20),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }),
+                  child: _buildCategorySection(),
                 )
               ],
             ),
@@ -169,12 +117,72 @@ class _HomePageState extends State<HomePage> {
       // the floating icon button
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.black,
-        onPressed: () {},
+        onPressed: () {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => const AddRecipes()));
+        },
         child: const Icon(
           Icons.add,
           color: Colors.white,
         ),
       ),
     );
+  }
+
+  Widget _buildCategorySection() {
+    return StreamBuilder(
+        stream: recipeStream,
+        builder: (context, AsyncSnapshot snapshot) {
+          if (snapshot.hasError) {
+            return const Text("Something went wrong, try again later.");
+          }
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          return snapshot.hasData
+              ? ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: EdgeInsets.zero,
+                  itemCount: snapshot.data.docs.length,
+                  itemBuilder: (context, index) {
+                    DocumentSnapshot recipe = snapshot.data.docs[index];
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => Recipe(
+                                    imagesrc: recipe["Image"],
+                                    recipeName: recipe["Recipe"],
+                                    recipeCategory: recipe["Category"],
+                                    recipeDescription: recipe["Details"])));
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 20),
+                        child: Column(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Image.network(
+                                recipe["Image"],
+                                height: 300,
+                                width: 300,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            Text(recipe["Recipe"],
+                                style: const TextStyle(fontSize: 20))
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                )
+              : const Center(
+                  child: Column(children: [
+                  Text("No Recipes found or low connection!"),
+                ]));
+        });
   }
 }

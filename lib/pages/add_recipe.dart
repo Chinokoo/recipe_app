@@ -2,9 +2,11 @@ import 'dart:io';
 
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:random_string/random_string.dart';
 import 'package:recipe_app/components/image_card.dart';
+import 'package:recipe_app/services/firebase_database.dart';
 
 class AddRecipes extends StatefulWidget {
   const AddRecipes({super.key});
@@ -14,7 +16,21 @@ class AddRecipes extends StatefulWidget {
 }
 
 class _AddRecipesState extends State<AddRecipes> {
+  //file for selected image.
   File? selectedImage;
+  //for loading state.
+  bool isLoading = false;
+  //recipe categories
+  final List<String> recipeCategories = [
+    "Main Course",
+    "Simple",
+    "Refreshing",
+    "Dessert"
+  ];
+
+  //string for categories
+  String? value;
+
   //controllers for text fields.
   //the recipe name controller
   TextEditingController recipeNameController = TextEditingController();
@@ -36,7 +52,10 @@ class _AddRecipesState extends State<AddRecipes> {
   }
 
   //uploading image function
-  uploadImage() async {
+  uploadRecipe() async {
+    setState(() {
+      isLoading = true;
+    });
     if (selectedImage != null &&
         recipeNameController.text != "" &&
         recipeDetailsController.text != "") {
@@ -53,7 +72,25 @@ class _AddRecipesState extends State<AddRecipes> {
         "Recipe": recipeNameController.text,
         "Details": recipeDetailsController.text,
         "Image": downloadurl,
+        "Category": value
       };
+      FirebaseDatabase().Addrecipe(addrecipe).then((value) => {
+            setState(() {
+              isLoading = false;
+            }),
+            recipeNameController.clear(),
+            recipeDetailsController.clear(),
+            selectedImage = null,
+            value = null,
+          });
+      Fluttertoast.showToast(
+          msg: "The Recipe has been added Successfully!",
+          toastLength: Toast.LENGTH_LONG,
+          gravity: ToastGravity.BOTTOM,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.green,
+          textColor: Colors.white,
+          fontSize: 16.0);
     }
   }
 
@@ -135,6 +172,48 @@ class _AddRecipesState extends State<AddRecipes> {
                   height: 20.0,
                 ),
 
+                //sized box for spacing.
+                const SizedBox(
+                  height: 10.0,
+                ),
+
+                Container(
+                  padding: const EdgeInsets.only(left: 10.0),
+                  width: MediaQuery.of(context).size.width,
+                  decoration: BoxDecoration(
+                      border: Border.all(width: 2),
+                      borderRadius: BorderRadius.circular(10)),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton(
+                      items: recipeCategories
+                          .map((recipeCategory) => DropdownMenuItem(
+                                value: recipeCategory,
+                                child: Text(
+                                  recipeCategory,
+                                  style: const TextStyle(
+                                      fontSize: 18.0, color: Colors.black),
+                                ),
+                              ))
+                          .toList(),
+                      onChanged: ((value) => setState(() {
+                            this.value = value;
+                          })),
+                      hint: const Text("Select Recipe Category"),
+                      iconSize: 36,
+                      icon: const Icon(
+                        Icons.arrow_drop_down,
+                        color: Colors.black,
+                      ),
+                      value: value,
+                    ),
+                  ),
+                ),
+
+                //sized box for spacing.
+                const SizedBox(
+                  height: 10.0,
+                ),
+
                 //input header called recipe name.
                 const Text(
                   "Recipe Details",
@@ -155,7 +234,8 @@ class _AddRecipesState extends State<AddRecipes> {
                       borderRadius: BorderRadius.circular(10)),
                   child: TextField(
                     controller: recipeDetailsController,
-                    maxLines: 10,
+                    maxLines: 20,
+                    minLines: 5,
                     decoration: const InputDecoration(
                         border: InputBorder.none,
                         hintText: "Enter recipe details here...."),
@@ -166,20 +246,28 @@ class _AddRecipesState extends State<AddRecipes> {
                   height: 20.0,
                 ),
                 //save button
-                Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                        color: Colors.black,
-                        borderRadius: BorderRadius.circular(10)),
-                    child: const Center(
-                      child: Text(
-                        "S A V E",
-                        style: TextStyle(
-                            fontSize: 20.0,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white),
-                      ),
-                    ))
+                GestureDetector(
+                  onTap: uploadRecipe,
+                  child: Container(
+                      padding: const EdgeInsets.all(10),
+                      margin: const EdgeInsets.only(bottom: 20.0),
+                      decoration: BoxDecoration(
+                          color: Colors.black,
+                          borderRadius: BorderRadius.circular(10)),
+                      child: Center(
+                        child: isLoading
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
+                            : const Text(
+                                "S A V E",
+                                style: TextStyle(
+                                    fontSize: 20.0,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white),
+                              ),
+                      )),
+                )
               ],
             )),
       ),
