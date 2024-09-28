@@ -72,7 +72,9 @@ class _AddRecipesState extends State<AddRecipes> {
         "Recipe": recipeNameController.text,
         "Details": recipeDetailsController.text,
         "Image": downloadurl,
-        "Category": value
+        "Category": value,
+        "Key": recipeNameController.text.substring(0, 1).toUpperCase(),
+        "SearchedName": recipeNameController.text.toUpperCase(),
       };
       FirebaseDatabase().Addrecipe(addrecipe).then((value) => {
             setState(() {

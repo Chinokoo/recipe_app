@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:recipe_app/models/recipe_category.dart';
+import 'package:recipe_app/pages/categories.dart';
 import 'package:recipe_app/services/data.dart';
 
 class CategorySection extends StatelessWidget {
@@ -16,23 +17,31 @@ class CategorySection extends StatelessWidget {
           itemCount: categories.length,
           scrollDirection: Axis.horizontal,
           itemBuilder: (context, index) {
-            return Container(
-              margin: const EdgeInsets.only(right: 10.0),
-              child: Column(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.asset(
-                      categories[index].imageUrl,
-                      height: 150,
-                      width: 150,
-                      fit: BoxFit.cover,
+            return GestureDetector(
+              onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => CategoriesPage(
+                            categoryName: categories[index].category,
+                          ))),
+              child: Container(
+                margin: const EdgeInsets.only(right: 10.0),
+                child: Column(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.asset(
+                        categories[index].imageUrl,
+                        height: 150,
+                        width: 150,
+                        fit: BoxFit.cover,
+                      ),
                     ),
-                  ),
-                  Text(categories[index].category,
-                      style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold)),
-                ],
+                    Text(categories[index].category,
+                        style: const TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
+                  ],
+                ),
               ),
             );
           }),
