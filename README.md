@@ -1,6 +1,7 @@
 # Recipe App
 
 A Flutter application for managing and exploring recipes.
+
 <image src="images/recipe_app.png" height="400">
 
 ## Features
